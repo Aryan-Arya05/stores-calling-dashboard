@@ -52,6 +52,7 @@
   .range-pop{position:absolute;right:0;top:calc(100% + 8px);z-index:60;background:var(--card);
              border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(34,50,58,.16);
              display:flex;overflow:hidden}
+  .range-pop[hidden]{display:none !important}
   .presets{display:flex;flex-direction:column;padding:10px;border-right:1px solid var(--line);
            min-width:148px;background:var(--paper)}
   .preset{border:none;background:transparent;text-align:left;padding:8px 12px;border-radius:8px;
@@ -324,7 +325,7 @@
    TO GO LIVE: paste the deployed /exec URL below. Leave empty for the
    built-in demo dataset. URL must NOT contain /u/1/.
    ===================================================================== */
-var API_URL = "https://script.googleusercontent.com/a/macros/mulmul.co/echo?user_content_key=AUkAhnQ2G2xCNwgC8UO7kFCGz8UmjyjBM_SF-7g_u2tqRXKsBtKX_aE07bWVzCDlMtOKXJKLL7ljFb1PxhthilYd7cFgEsNsjEo5PoInIrifR2Osq35y9wiHar0akpXhprcnxou9_tGJmjf0Mzl6Hx1Z1QQse3cUfe2jwvk-VrksoIaGhQp3wn9Z9hE2i0uk_EYivjMEItXAjf7vUVCwUKjZh_3MEvJxe9XZveZbZsVU5Ws13hrf82TBYuSRbAT8NJ26aePnZ9vC8EH705ZEALDlqbgbUgix-ZDGmQvKJEBO&lib=MsymvDcd-svu0xOO7pXYpKhg1vFAUauXe";
+var API_URL = "https://script.google.com/macros/s/AKfycbxyILSkmxmHGL0OPrM01rCdSXbQT8EY3dy7w442b8B9ZxYeJU5pCRMHlHa80JwoI02ACQ/exec";
 var REFRESH_MINUTES = 3;   // auto-refetch interval when live; only polls while the tab is visible
 
 /* ------------------------- helpers ------------------------- */
