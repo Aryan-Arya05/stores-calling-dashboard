@@ -42,12 +42,53 @@
   .brand .sub{color:var(--ink-soft);font-size:12.5px;margin-top:4px}
   .brand .sub .mode-demo{color:var(--rose);font-weight:600}
   .brand .sub .mode-live{color:var(--sage);font-weight:600}
-  .month-tabs{display:flex;gap:6px;flex-wrap:wrap}
-  .month-tab{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:7px 16px;
-             font-family:var(--body);font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
-  .month-tab:hover{border-color:var(--peacock)}
-  .month-tab.active{background:var(--peacock);border-color:var(--peacock);color:#fff}
-  .month-tab:focus-visible,.day-pill:focus-visible,.wcell:focus-visible,th.sortable:focus-visible{outline:2px solid var(--marigold);outline-offset:2px}
+  /* ---------- date range picker ---------- */
+  .range-picker{position:relative}
+  .range-btn{display:flex;align-items:center;gap:9px;border:1px solid var(--line);background:var(--card);
+             border-radius:10px;padding:9px 14px;font-family:var(--body);font-size:13px;font-weight:600;
+             color:var(--ink);cursor:pointer}
+  .range-btn:hover{border-color:var(--peacock)}
+  .range-btn .caret{font-size:10px;color:var(--ink-soft)}
+  .range-pop{position:absolute;right:0;top:calc(100% + 8px);z-index:60;background:var(--card);
+             border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 40px rgba(34,50,58,.16);
+             display:flex;overflow:hidden}
+  .presets{display:flex;flex-direction:column;padding:10px;border-right:1px solid var(--line);
+           min-width:148px;background:var(--paper)}
+  .preset{border:none;background:transparent;text-align:left;padding:8px 12px;border-radius:8px;
+          font-family:var(--body);font-size:12.5px;font-weight:500;color:var(--ink);cursor:pointer;white-space:nowrap}
+  .preset:hover{background:var(--peacock-tint)}
+  .preset.active{background:var(--peacock);color:#fff}
+  .cal-wrap{padding:14px 16px 12px}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px}
+  .cal-nav{border:1px solid var(--line);background:var(--card);border-radius:8px;width:28px;height:28px;
+           cursor:pointer;font-size:15px;line-height:1;color:var(--ink)}
+  .cal-nav:hover{border-color:var(--peacock)}
+  .cal-titles{display:flex;flex:1}
+  .cal-titles span{flex:1;text-align:center;font-family:var(--display);font-size:16px;font-weight:600}
+  .cals{display:flex;gap:22px}
+  .cal{display:grid;grid-template-columns:repeat(7,34px);gap:2px;align-content:start}
+  .cal .dh{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);
+           text-align:center;padding:4px 0;font-weight:600}
+  .cal .dc{border:none;background:transparent;height:32px;border-radius:8px;font-family:var(--mono);
+           font-size:12px;color:var(--ink);cursor:pointer}
+  .cal .dc:hover{background:var(--peacock-tint)}
+  .cal .dc.blank{visibility:hidden;cursor:default}
+  .cal .dc.inr{background:var(--peacock-tint);border-radius:0}
+  .cal .dc.edge{background:var(--peacock);color:#fff;border-radius:8px}
+  .pop-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;
+            padding-top:10px;border-top:1px solid var(--line)}
+  .pop-foot .pend{font-size:12px;color:var(--ink-soft)}
+  .btn{border-radius:9px;padding:8px 16px;font-family:var(--body);font-size:12.5px;font-weight:600;cursor:pointer}
+  .btn.ghost{border:1px solid var(--line);background:var(--card);color:var(--ink)}
+  .btn.solid{border:1px solid var(--peacock);background:var(--peacock);color:#fff}
+  .btn.solid:disabled{opacity:.45;cursor:not-allowed}
+  @media(max-width:760px){
+    .range-pop{right:auto;left:0;flex-direction:column;max-width:min(92vw,372px)}
+    .presets{flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--line)}
+    .cal2col{display:none}
+  }
+  .range-btn:focus-visible,.preset:focus-visible,.cal .dc:focus-visible,.btn:focus-visible,.cal-nav:focus-visible,
+  .day-pill:focus-visible,.wcell:focus-visible,th.sortable:focus-visible{outline:2px solid var(--marigold);outline-offset:2px}
 
   /* ---------- weave strip (signature) ---------- */
   .weave-block{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-top:22px}
@@ -131,6 +172,50 @@
   .empty-note{padding:26px;text-align:center;color:var(--ink-soft)}
 
   footer{margin-top:34px;font-size:11.5px;color:var(--ink-soft);text-align:center}
+
+  /* ---------- responsive: mobile ---------- */
+  @media(max-width:760px){
+    .wrap{padding:0 12px 48px}
+    .topbar{padding:18px 0 14px;flex-direction:column;align-items:stretch;gap:12px}
+    .brand h1{font-size:26px}
+    .brand .sub{font-size:11.5px}
+    .range-picker{width:100%}
+    .range-btn{width:100%;justify-content:space-between}
+    .range-pop{position:fixed;left:50%;right:auto;top:74px;transform:translateX(-50%);
+               width:min(94vw,372px);max-height:calc(100vh - 94px);overflow-y:auto}
+    .weave-block{padding:14px}
+    .block-head h2{font-size:19px}
+    .block-head .hint{font-size:11px}
+    .weave{grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:5px}
+    .day-mini{gap:14px}
+    .day-mini .m{min-width:74px}
+    .day-mini .m .v{font-size:15px}
+    .kpis{grid-template-columns:repeat(2,1fr);gap:10px}
+    .kpi{padding:14px 14px 12px}
+    .kpi .v{font-size:27px}
+    .kpi .s{font-size:11px}
+    .chart-card{padding:14px}
+    .chart-box{height:230px}
+    .board .block-head{padding:14px 14px 0}
+    table{min-width:780px}
+    thead th{padding:9px 8px;font-size:10px}
+    tbody td{padding:8px;font-size:11.5px}
+    tbody td.txt{max-width:132px;overflow:hidden;text-overflow:ellipsis}
+    .bar{width:54px}
+    /* sticky rank + store columns: store names stay visible while the rest scrolls */
+    thead th:nth-child(1),thead th:nth-child(2){z-index:5}
+    thead th:nth-child(1),tbody tr.rowmain td:nth-child(1){position:sticky;left:0;z-index:4}
+    thead th:nth-child(2),tbody tr.rowmain td:nth-child(2){position:sticky;left:42px;z-index:4;
+        box-shadow:6px 0 8px -6px rgba(34,50,58,.28)}
+    thead th:nth-child(1){min-width:42px}
+    tbody tr.rowmain td:nth-child(1),tbody tr.rowmain td:nth-child(2){background:var(--card)}
+    tbody tr.rowmain:hover td:nth-child(1),tbody tr.rowmain:hover td:nth-child(2){background:var(--peacock-tint)}
+  }
+  @media(max-width:380px){
+    .kpis{grid-template-columns:1fr 1fr;gap:8px}
+    .kpi .v{font-size:23px}
+    .brand h1{font-size:23px}
+  }
 </style>
 </head>
 <body>
@@ -142,7 +227,32 @@
       <h1>Stores Calling Performance</h1>
       <div class="sub" id="subline">Loading…</div>
     </div>
-    <div class="month-tabs" id="monthTabs"></div>
+    <div class="range-picker" id="rangePicker">
+      <button class="range-btn" id="rangeBtn" aria-haspopup="dialog" aria-expanded="false">
+        <span aria-hidden="true">&#128197;</span><span id="rangeLabel">&mdash;</span><span class="caret">&#9662;</span>
+      </button>
+      <div class="range-pop" id="rangePop" hidden>
+        <div class="presets" id="presetList"></div>
+        <div class="cal-wrap">
+          <div class="cal-head">
+            <button class="cal-nav" id="calPrev" aria-label="Previous month">&#8249;</button>
+            <div class="cal-titles"><span id="calT1"></span><span id="calT2" class="cal2col"></span></div>
+            <button class="cal-nav" id="calNext" aria-label="Next month">&#8250;</button>
+          </div>
+          <div class="cals">
+            <div class="cal" id="cal1"></div>
+            <div class="cal cal2col" id="cal2"></div>
+          </div>
+          <div class="pop-foot">
+            <span class="pend" id="pendLabel"></span>
+            <span>
+              <button class="btn ghost" id="rangeCancel">Cancel</button>
+              <button class="btn solid" id="rangeApply">Apply</button>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- signature: reporting weave -->
@@ -215,6 +325,7 @@
    built-in demo dataset. URL must NOT contain /u/1/.
    ===================================================================== */
 var API_URL = "https://script.googleusercontent.com/a/macros/mulmul.co/echo?user_content_key=AUkAhnQ2G2xCNwgC8UO7kFCGz8UmjyjBM_SF-7g_u2tqRXKsBtKX_aE07bWVzCDlMtOKXJKLL7ljFb1PxhthilYd7cFgEsNsjEo5PoInIrifR2Osq35y9wiHar0akpXhprcnxou9_tGJmjf0Mzl6Hx1Z1QQse3cUfe2jwvk-VrksoIaGhQp3wn9Z9hE2i0uk_EYivjMEItXAjf7vUVCwUKjZh_3MEvJxe9XZveZbZsVU5Ws13hrf82TBYuSRbAT8NJ26aePnZ9vC8EH705ZEALDlqbgbUgix-ZDGmQvKJEBO&lib=MsymvDcd-svu0xOO7pXYpKhg1vFAUauXe";
+var REFRESH_MINUTES = 3;   // auto-refetch interval when live; only polls while the tab is visible
 
 /* ------------------------- helpers ------------------------- */
 var nfIN = new Intl.NumberFormat('en-IN');
@@ -323,49 +434,127 @@ function buildDemo(){
 
 /* ------------------------- state ------------------------- */
 var DATA = null;
-var state = { monthKey: null, dayIso: null, sortKey: 'revenue', sortDir: -1, expanded: null };
+var state = { start: null, end: null, dayIso: null, sortKey: 'revenue', sortDir: -1, expanded: null };
 var trendChart = null, cityChart = null;
 
+function todayIso(){
+  var d = new Date();
+  return isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+function addDaysIso(iso, n){
+  var d = parseIso(iso);
+  d.setDate(d.getDate() + n);
+  return isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
+}
+function fmtD(iso, withYear){
+  var d = parseIso(iso);
+  return d.getDate() + ' ' + MON[d.getMonth()] + (withYear ? ' ' + d.getFullYear() : '');
+}
+function rangeLabel(){
+  if (state.start === state.end) return fmtD(state.start, true);
+  var sameYear = state.start.slice(0, 4) === state.end.slice(0, 4);
+  return fmtD(state.start, !sameYear) + ' \u2013 ' + fmtD(state.end, true);
+}
+function latestDataDay(){
+  var m = null;
+  DATA.entries.forEach(function(e){ if (!m || e.date > m) m = e.date; });
+  return m;
+}
+/* target for a monthly figure, pro-rated to the selected range (handles ranges spanning months) */
+function proratedTarget(monthly){
+  if (!monthly) return 0;
+  var s = parseIso(state.start), e = parseIso(state.end), total = 0, guard = 0;
+  var cur = new Date(s.getFullYear(), s.getMonth(), 1);
+  while (cur <= e && guard < 36){
+    guard++;
+    var dim = new Date(cur.getFullYear(), cur.getMonth() + 1, 0).getDate();
+    var mStart = new Date(cur.getFullYear(), cur.getMonth(), 1);
+    var mEnd = new Date(cur.getFullYear(), cur.getMonth(), dim);
+    var oS = s > mStart ? s : mStart;
+    var oE = e < mEnd ? e : mEnd;
+    var days = Math.round((oE - oS) / 86400000) + 1;
+    if (days > 0) total += monthly * days / dim;
+    cur = new Date(cur.getFullYear(), cur.getMonth() + 1, 1);
+  }
+  return total;
+}
+
 /* ------------------------- load ------------------------- */
+var lastFetchAt = 0;
 function init(){
   if (API_URL){
-    fetch(API_URL)
-      .then(function(r){ return r.json(); })
-      .then(function(j){
-        if (j.error) throw new Error(j.error);
-        boot(j, true);
-      })
-      .catch(function(err){
-        document.getElementById('subline').textContent = 'Could not load live data (' + err.message + '). Check the Apps Script deployment.';
-      });
+    fetchLive(true);
+    setInterval(function(){
+      if (document.visibilityState === 'visible') fetchLive(false);
+    }, REFRESH_MINUTES * 60 * 1000);
+    document.addEventListener('visibilitychange', function(){
+      // tab regains focus after being stale → refresh immediately
+      if (document.visibilityState === 'visible' &&
+          Date.now() - lastFetchAt > REFRESH_MINUTES * 60 * 1000) fetchLive(false);
+    });
   } else {
     boot(buildDemo(), false);
   }
 }
-function boot(data, live){
-  DATA = data;
-  var months = {};
-  DATA.entries.forEach(function(e){ months[monthKeyOf(e.date)] = true; });
-  var keys = Object.keys(months).sort();
-  if (!keys.length) keys = [monthKeyOf(new Date().toISOString().slice(0, 10))];
-  state.monthKey = keys[keys.length - 1];
-  var daysWithData = DATA.entries.filter(function(e){ return monthKeyOf(e.date) === state.monthKey; })
-                                 .map(function(e){ return e.date; }).sort();
-  state.dayIso = daysWithData.length ? daysWithData[daysWithData.length - 1]
-                                     : state.monthKey + '-01';
+function fetchLive(first){
+  fetch(API_URL, { cache: 'no-store' })
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      if (j.error) throw new Error(j.error);
+      lastFetchAt = Date.now();
+      if (first) boot(j, true);
+      else refresh(j);
+    })
+    .catch(function(err){
+      if (first){
+        document.getElementById('subline').textContent =
+          'Could not load live data (' + err.message + '). Check the Apps Script deployment.';
+      } else {
+        // background refresh failed (flaky network etc.) — keep showing current data, note it quietly
+        console.warn('Refresh failed:', err.message);
+        updateSubline(true, true);
+      }
+    });
+}
+function updateSubline(live, stale){
   var sub = document.getElementById('subline');
   sub.innerHTML = '26 stores · one agent each · ' +
     (live ? '<span class="mode-live">LIVE</span>' : '<span class="mode-demo">DEMO DATA</span> — set API_URL in this file to go live') +
-    ' · updated ' + new Date(DATA.updatedAt).toLocaleString('en-IN');
+    (live ? ' · auto-refreshes every ' + REFRESH_MINUTES + ' min' : '') +
+    ' · data as of ' + new Date(DATA.updatedAt).toLocaleString('en-IN') +
+    (stale ? ' · <span class="mode-demo">last refresh failed — retrying</span>' : '');
+}
+function boot(data, live){
+  DATA = data;
+  var latest = latestDataDay() || todayIso();
+  state.end = latest;
+  state.start = latest.slice(0, 8) + '01';   // default: month-to-date of the latest data day
+  state.dayIso = latest;
+  updateSubline(live, false);
   document.getElementById('footer').textContent =
     'Mulmul internal · reads "Stores Calling Performance" sheet via Apps Script · built as a single static file';
-  renderMonthTabs(keys);
+  initPicker();
+  updateRangeLabel();
   renderAll();
+}
+function refresh(data){
+  // background update: swap data in, keep the user's range/day/sort/expanded selections
+  var prevLatest = latestDataDay();
+  DATA = data;
+  var newLatest = latestDataDay();
+  // if the range ended on the newest day, follow the data forward (e.g. tab left open overnight)
+  if (state.end === prevLatest && newLatest && newLatest > prevLatest){
+    state.end = newLatest;
+    if (state.dayIso === prevLatest) state.dayIso = newLatest;
+  }
+  updateSubline(true, false);
+  updateRangeLabel();
+  renderAll(true);
 }
 
 /* ------------------------- aggregations ------------------------- */
-function monthEntries(){
-  return DATA.entries.filter(function(e){ return monthKeyOf(e.date) === state.monthKey; });
+function rangeEntries(){
+  return DATA.entries.filter(function(e){ return e.date >= state.start && e.date <= state.end; });
 }
 function dayEntries(iso){
   return DATA.entries.filter(function(e){ return e.date === iso; });
@@ -376,7 +565,7 @@ function storeAgg(){
     by[s.store] = { store: s.store, city: s.city, target: s,
       days: 0, calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0 };
   });
-  monthEntries().forEach(function(e){
+  rangeEntries().forEach(function(e){
     var a = by[e.store];
     if (!a) return;
     a.days += 1;
@@ -387,53 +576,198 @@ function storeAgg(){
     var a = by[k];
     a.connectPct = a.calls ? a.connected / a.calls : 0;
     a.convPct = a.leads ? a.conversions / a.leads : 0;
-    a.revAch = a.target.revenueTarget ? a.revenue / a.target.revenueTarget : 0;
+    a.revTgt = proratedTarget(a.target.revenueTarget);
+    a.revAch = a.revTgt ? a.revenue / a.revTgt : 0;
     return a;
   });
 }
 
-/* ------------------------- render: month tabs ------------------------- */
-function renderMonthTabs(keys){
-  var el = document.getElementById('monthTabs');
-  el.innerHTML = '';
-  keys.forEach(function(k){
+/* ------------------------- date range picker ------------------------- */
+/* Shopify-style: presets left, two-month calendar right, Apply/Cancel.
+   Deliberately NO hover-preview — rebuilding the grid on hover kills click
+   listeners (known trap from the CEO dashboard calendar). */
+var picker = { pStart: null, pEnd: null, viewY: 0, viewM: 0 };
+var PRESETS = [
+  ['Today',        function(t){ return [t, t]; }],
+  ['Yesterday',    function(t){ var y = addDaysIso(t, -1); return [y, y]; }],
+  ['Last 7 days',  function(t){ return [addDaysIso(t, -6), t]; }],
+  ['Last 30 days', function(t){ return [addDaysIso(t, -29), t]; }],
+  ['This month',   function(t){ return [t.slice(0, 8) + '01', t]; }],
+  ['Last month',   function(t){
+    var d = parseIso(t);
+    var f = new Date(d.getFullYear(), d.getMonth() - 1, 1);
+    var l = new Date(d.getFullYear(), d.getMonth(), 0);
+    return [isoOf(f.getFullYear(), f.getMonth() + 1, 1), isoOf(l.getFullYear(), l.getMonth() + 1, l.getDate())];
+  }],
+  ['All data',     function(t){
+    var min = null, max = null;
+    DATA.entries.forEach(function(e){
+      if (!min || e.date < min) min = e.date;
+      if (!max || e.date > max) max = e.date;
+    });
+    return [min || t, max || t];
+  }]
+];
+function initPicker(){
+  var btn = document.getElementById('rangeBtn');
+  var pop = document.getElementById('rangePop');
+  var list = document.getElementById('presetList');
+  list.innerHTML = '';
+  PRESETS.forEach(function(p){
     var b = document.createElement('button');
-    b.className = 'month-tab' + (k === state.monthKey ? ' active' : '');
-    b.textContent = monthLabel(k);
+    b.className = 'preset';
+    b.textContent = p[0];
     b.onclick = function(){
-      state.monthKey = k;
-      var days = DATA.entries.filter(function(e){ return monthKeyOf(e.date) === k; })
-                             .map(function(e){ return e.date; }).sort();
-      state.dayIso = days.length ? days[days.length - 1] : k + '-01';
-      state.expanded = null;
-      renderMonthTabs(keys);
-      renderAll();
+      var r = p[1](todayIso());
+      picker.pStart = r[0]; picker.pEnd = r[1];
+      setViewFromEnd(picker.pEnd);
+      renderPicker();
     };
-    el.appendChild(b);
+    list.appendChild(b);
   });
+  btn.onclick = function(ev){
+    ev.stopPropagation();
+    if (pop.hidden) openPicker(); else closePicker();
+  };
+  document.getElementById('calPrev').onclick = function(){ shiftView(-1); };
+  document.getElementById('calNext').onclick = function(){ shiftView(1); };
+  document.getElementById('rangeCancel').onclick = closePicker;
+  document.getElementById('rangeApply').onclick = applyRange;
+  document.addEventListener('click', function(ev){
+    if (!pop.hidden && !document.getElementById('rangePicker').contains(ev.target)) closePicker();
+  });
+  document.addEventListener('keydown', function(ev){
+    if (ev.key === 'Escape') closePicker();
+  });
+}
+function setViewFromEnd(iso){
+  var e = parseIso(iso);
+  var twoCal = window.innerWidth > 760;
+  // desktop: end month sits on the RIGHT calendar; mobile: single calendar shows the end month
+  picker.viewY = e.getFullYear();
+  picker.viewM = e.getMonth() - (twoCal ? 1 : 0);
+  if (picker.viewM < 0){ picker.viewM += 12; picker.viewY--; }
+}
+function openPicker(){
+  picker.pStart = state.start;
+  picker.pEnd = state.end;
+  setViewFromEnd(state.end);
+  renderPicker();
+  document.getElementById('rangePop').hidden = false;
+  document.getElementById('rangeBtn').setAttribute('aria-expanded', 'true');
+}
+function closePicker(){
+  document.getElementById('rangePop').hidden = true;
+  document.getElementById('rangeBtn').setAttribute('aria-expanded', 'false');
+}
+function shiftView(n){
+  picker.viewM += n;
+  if (picker.viewM < 0){ picker.viewM += 12; picker.viewY--; }
+  if (picker.viewM > 11){ picker.viewM -= 12; picker.viewY++; }
+  renderPicker();
+}
+function renderPicker(){
+  var y2 = picker.viewY, m2 = picker.viewM + 1;
+  if (m2 > 11){ m2 -= 12; y2++; }
+  document.getElementById('calT1').textContent = MON[picker.viewM] + ' ' + picker.viewY;
+  document.getElementById('calT2').textContent = MON[m2] + ' ' + y2;
+  buildMonthGrid(document.getElementById('cal1'), picker.viewY, picker.viewM);
+  buildMonthGrid(document.getElementById('cal2'), y2, m2);
+  // highlight matching preset
+  var t = todayIso();
+  var kids = document.getElementById('presetList').children;
+  for (var i = 0; i < kids.length; i++){
+    var r = PRESETS[i][1](t);
+    kids[i].className = 'preset' + (picker.pStart === r[0] && picker.pEnd === r[1] ? ' active' : '');
+  }
+  var pend = document.getElementById('pendLabel');
+  if (picker.pStart && picker.pEnd){
+    pend.textContent = (picker.pStart === picker.pEnd)
+      ? fmtD(picker.pStart, true)
+      : fmtD(picker.pStart, true) + ' \u2013 ' + fmtD(picker.pEnd, true);
+  } else if (picker.pStart){
+    pend.textContent = fmtD(picker.pStart, true) + ' \u2013 pick an end date';
+  } else {
+    pend.textContent = 'Pick a start date';
+  }
+  document.getElementById('rangeApply').disabled = !picker.pStart;
+}
+function buildMonthGrid(el, y, m){
+  el.innerHTML = '';
+  ['Su','Mo','Tu','We','Th','Fr','Sa'].forEach(function(h){
+    var d = document.createElement('div');
+    d.className = 'dh';
+    d.textContent = h;
+    el.appendChild(d);
+  });
+  var firstDow = new Date(y, m, 1).getDay();
+  var dim = new Date(y, m + 1, 0).getDate();
+  for (var b = 0; b < firstDow; b++){
+    var bl = document.createElement('button');
+    bl.className = 'dc blank';
+    bl.tabIndex = -1;
+    el.appendChild(bl);
+  }
+  for (var d = 1; d <= dim; d++){
+    var iso = isoOf(y, m + 1, d);
+    var btn = document.createElement('button');
+    var cls = 'dc';
+    if (iso === picker.pStart || iso === picker.pEnd) cls += ' edge';
+    else if (picker.pStart && picker.pEnd && iso > picker.pStart && iso < picker.pEnd) cls += ' inr';
+    btn.className = cls;
+    btn.textContent = d;
+    btn.onclick = (function(dayIso){
+      return function(ev){
+        ev.stopPropagation();
+        if (!picker.pStart || (picker.pStart && picker.pEnd)){
+          picker.pStart = dayIso;
+          picker.pEnd = null;
+        } else if (dayIso < picker.pStart){
+          picker.pEnd = picker.pStart;
+          picker.pStart = dayIso;
+        } else {
+          picker.pEnd = dayIso;
+        }
+        renderPicker();
+      };
+    })(iso);
+    el.appendChild(btn);
+  }
+}
+function applyRange(){
+  state.start = picker.pStart;
+  state.end = picker.pEnd || picker.pStart;
+  if (state.dayIso < state.start || state.dayIso > state.end) state.dayIso = state.end;
+  state.expanded = null;
+  closePicker();
+  updateRangeLabel();
+  renderAll();
+}
+function updateRangeLabel(){
+  document.getElementById('rangeLabel').textContent = rangeLabel();
 }
 
 /* ------------------------- render: weave + day ------------------------- */
-function renderDayStrip(){
+function renderDayStrip(skipScroll){
   var el = document.getElementById('dayStrip');
   el.innerHTML = '';
-  var p = state.monthKey.split('-');
-  var y = +p[0], m = +p[1];
-  var dim = new Date(y, m, 0).getDate();
   var withData = {};
-  monthEntries().forEach(function(e){ withData[e.date] = true; });
-  for (var d = 1; d <= dim; d++){
-    var iso = isoOf(y, m, d);
+  rangeEntries().forEach(function(e){ withData[e.date] = true; });
+  var count = 0;
+  for (var iso = state.start; iso <= state.end && count < 400; iso = addDaysIso(iso, 1)){
+    count++;
+    var d = parseIso(iso);
+    var small = (d.getDate() === 1 || iso === state.start) ? MON[d.getMonth()] : DOW[d.getDay()];
     var b = document.createElement('button');
     b.className = 'day-pill' + (withData[iso] ? ' hasdata' : '') + (iso === state.dayIso ? ' active' : '');
-    b.innerHTML = '<span class="dnum">' + d + '</span><span class="dow">' + DOW[new Date(y, m - 1, d).getDay()] + '</span>';
+    b.innerHTML = '<span class="dnum">' + d.getDate() + '</span><span class="dow">' + small + '</span>';
     b.onclick = (function(dayIso){
       return function(){ state.dayIso = dayIso; renderDay(); renderDayStrip(); };
     })(iso);
     el.appendChild(b);
   }
   var active = el.querySelector('.day-pill.active');
-  if (active) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+  if (active && !skipScroll) active.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 function renderDay(){
   var d = parseIso(state.dayIso);
@@ -485,20 +819,20 @@ function renderKpis(){
   aggs.forEach(function(a){
     t.calls += a.calls; t.connected += a.connected; t.leads += a.leads;
     t.conversions += a.conversions; t.revenue += a.revenue;
-    t.revTarget += a.target.revenueTarget;
+    t.revTarget += a.revTgt;
   });
   var connectPct = t.calls ? t.connected / t.calls : 0;
   var convPct = t.leads ? t.conversions / t.leads : 0;
   var revAch = t.revTarget ? t.revenue / t.revTarget : 0;
   var el = document.getElementById('kpis');
   el.innerHTML =
-    kpi('Calls made', fmtNum(t.calls), monthLabel(state.monthKey) + ' · all stores', '') +
+    kpi('Calls made', fmtNum(t.calls), rangeLabel() + ' · all stores', '') +
     kpi('Connect rate', fmtPct(connectPct), fmtNum(t.connected) + ' connected', '') +
     kpi('Leads', fmtNum(t.leads), 'from connected calls', '') +
     kpi('Conversions', fmtNum(t.conversions), fmtPct(convPct) + ' of leads', 'gold') +
     kpi('Revenue', fmtMoneyShort(t.revenue),
         '<b class="' + (revAch >= 1 ? 'good' : (revAch >= 0.6 ? '' : 'bad')) + '">' + fmtPct(revAch) +
-        '</b> of ' + fmtMoneyShort(t.revTarget) + ' target', 'gold');
+        '</b> of ' + fmtMoneyShort(t.revTarget) + ' pro-rated target', 'gold');
   function kpi(l, v, s, cls){
     return '<div class="kpi ' + cls + '"><div class="l">' + l + '</div><div class="v">' + v +
            '</div><div class="s">' + s + '</div></div>';
@@ -512,18 +846,24 @@ function renderCharts(){
   var marigold = css.getPropertyValue('--marigold').trim();
   var ink = css.getPropertyValue('--ink-soft').trim();
   var byDay = {};
-  monthEntries().forEach(function(e){
-    if (!byDay[e.date]) byDay[e.date] = { calls: 0, revenue: 0 };
+  var days = [];
+  var guard = 0;
+  for (var iso = state.start; iso <= state.end && guard < 400; iso = addDaysIso(iso, 1)){
+    guard++;
+    days.push(iso);
+    byDay[iso] = { calls: 0, revenue: 0 };
+  }
+  rangeEntries().forEach(function(e){
+    if (!byDay[e.date]) return;
     byDay[e.date].calls += e.calls;
     byDay[e.date].revenue += e.revenue;
   });
-  var days = Object.keys(byDay).sort();
-  document.getElementById('trendTitle').textContent = 'Daily trend — ' + monthLabel(state.monthKey);
+  document.getElementById('trendTitle').textContent = 'Daily trend — ' + rangeLabel();
   if (trendChart) trendChart.destroy();
   trendChart = new Chart(document.getElementById('trendChart'), {
     type: 'line',
     data: {
-      labels: days.map(function(d){ return +d.slice(8); }),
+      labels: days.map(function(d){ return fmtD(d, false); }),
       datasets: [
         { label: 'Calls', data: days.map(function(d){ return byDay[d].calls; }),
           borderColor: peacock, backgroundColor: peacock, tension: .35, pointRadius: 2, yAxisID: 'y' },
@@ -585,7 +925,7 @@ var COLS = [
   { key: 'revAch', label: 'vs Target', sortable: true }
 ];
 function renderBoard(){
-  document.getElementById('boardTitle').textContent = 'Store leaderboard — ' + monthLabel(state.monthKey);
+  document.getElementById('boardTitle').textContent = 'Store leaderboard — ' + rangeLabel();
   var head = document.getElementById('boardHead');
   head.innerHTML = '';
   COLS.forEach(function(c){
@@ -615,10 +955,10 @@ function renderBoard(){
   });
   var body = document.getElementById('boardBody');
   body.innerHTML = '';
-  if (!monthEntries().length){
+  if (!rangeEntries().length){
     var tr0 = document.createElement('tr');
     tr0.innerHTML = '<td colspan="' + COLS.length + '" class="empty-note">No entries yet for ' +
-      monthLabel(state.monthKey) + '. Rows appear as the team fills Daily Entry.</td>';
+      rangeLabel() + '. Rows appear as the team fills Daily Entry.</td>';
     body.appendChild(tr0);
     return;
   }
@@ -650,11 +990,11 @@ function renderBoard(){
 function detailRow(store){
   var tr = document.createElement('tr');
   tr.className = 'detail';
-  var rows = monthEntries().filter(function(e){ return e.store === store; })
+  var rows = rangeEntries().filter(function(e){ return e.store === store; })
     .sort(function(a, b){ return a.date < b.date ? 1 : -1; });
   var html = '<td colspan="' + COLS.length + '">';
   if (!rows.length){
-    html += 'No entries for ' + store + ' this month.';
+    html += 'No entries for ' + store + ' in this range.';
   } else {
     html += '<table class="mini-table"><tr><th>Date</th><th>Status</th><th>Calls</th><th>Conn</th>' +
             '<th>Leads</th><th>Conv</th><th>Revenue</th><th style="text-align:left">Remarks</th></tr>';
@@ -673,8 +1013,8 @@ function detailRow(store){
 }
 
 /* ------------------------- render all ------------------------- */
-function renderAll(){
-  renderDayStrip();
+function renderAll(skipScroll){
+  renderDayStrip(skipScroll);
   renderDay();
   renderKpis();
   renderCharts();
