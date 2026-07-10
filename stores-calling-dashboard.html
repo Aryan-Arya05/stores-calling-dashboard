@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mulmul — Stores Calling Performance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --paper:#FAF7F0;
+    --card:#FFFFFF;
+    --ink:#22323A;
+    --ink-soft:#5C6B72;
+    --line:#E7E0D2;
+    --peacock:#0F5F5B;
+    --peacock-deep:#0B4340;
+    --peacock-tint:#E3EEEC;
+    --marigold:#DFA02F;
+    --marigold-tint:#FBF1DC;
+    --rose:#C05746;
+    --rose-tint:#F7E7E3;
+    --sage:#3E8E5F;
+    --mono:'JetBrains Mono',monospace;
+    --body:'Inter',sans-serif;
+    --display:'Cormorant Garamond',serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} *{transition:none!important;animation:none!important} }
+  body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5}
+  a{color:var(--peacock)}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 20px 64px}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+          padding:26px 0 18px;border-bottom:1px solid var(--line)}
+  .brand .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--peacock);font-weight:600}
+  .brand h1{font-family:var(--display);font-weight:600;font-size:34px;line-height:1.1;margin-top:2px}
+  .brand .sub{color:var(--ink-soft);font-size:12.5px;margin-top:4px}
+  .brand .sub .mode-demo{color:var(--rose);font-weight:600}
+  .brand .sub .mode-live{color:var(--sage);font-weight:600}
+  .month-tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .month-tab{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:7px 16px;
+             font-family:var(--body);font-size:12.5px;font-weight:600;color:var(--ink-soft);cursor:pointer}
+  .month-tab:hover{border-color:var(--peacock)}
+  .month-tab.active{background:var(--peacock);border-color:var(--peacock);color:#fff}
+  .month-tab:focus-visible,.day-pill:focus-visible,.wcell:focus-visible,th.sortable:focus-visible{outline:2px solid var(--marigold);outline-offset:2px}
+
+  /* ---------- weave strip (signature) ---------- */
+  .weave-block{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin-top:22px}
+  .block-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+  .block-head h2{font-family:var(--display);font-size:22px;font-weight:600}
+  .block-head .hint{font-size:12px;color:var(--ink-soft)}
+  .day-strip{display:flex;gap:5px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px}
+  .day-pill{min-width:44px;border:1px solid var(--line);background:var(--paper);border-radius:9px;padding:5px 0;
+            text-align:center;cursor:pointer;flex:0 0 auto}
+  .day-pill .dnum{font-family:var(--mono);font-size:13px;font-weight:600;display:block}
+  .day-pill .dow{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)}
+  .day-pill.hasdata{border-color:#CBDBD8;background:var(--peacock-tint)}
+  .day-pill.active{background:var(--peacock);border-color:var(--peacock)}
+  .day-pill.active .dnum,.day-pill.active .dow{color:#fff}
+  .weave{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:7px}
+  .wcell{border-radius:9px;padding:8px 4px 7px;text-align:center;border:1.5px solid transparent;cursor:pointer;position:relative}
+  .wcell .code{font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:.04em;display:block}
+  .wcell .st{font-size:9px;letter-spacing:.05em;text-transform:uppercase;display:block;margin-top:1px;opacity:.85}
+  .wcell.present{background:var(--peacock);color:#fff}
+  .wcell.halfday{background:var(--marigold);color:#3d2c07}
+  .wcell.weekoff{background:#EDEAE1;color:var(--ink-soft)}
+  .wcell.leave{background:#D8D4C8;color:#4d4a3f}
+  .wcell.closed{background:var(--rose-tint);color:var(--rose);border-color:var(--rose)}
+  .wcell.missing{background:var(--card);color:var(--rose);border-color:var(--rose);border-style:dashed}
+  .weave-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:14px;font-size:11.5px;color:var(--ink-soft)}
+  .weave-legend span{display:inline-flex;align-items:center;gap:6px}
+  .swatch{width:12px;height:12px;border-radius:4px;display:inline-block}
+  .missing-line{margin-top:12px;font-size:12.5px}
+  .missing-line strong{color:var(--rose)}
+  .day-mini{display:flex;gap:26px;flex-wrap:wrap;margin-top:16px;padding-top:14px;border-top:1px dashed var(--line)}
+  .day-mini .m{min-width:90px}
+  .day-mini .m .v{font-family:var(--mono);font-size:17px;font-weight:600}
+  .day-mini .m .l{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft)}
+
+  /* ---------- KPI cards ---------- */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-top:22px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px 16px;position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--peacock)}
+  .kpi.gold::before{background:var(--marigold)}
+  .kpi .l{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  .kpi .v{font-family:var(--display);font-size:36px;font-weight:600;line-height:1.15;margin-top:4px}
+  .kpi .s{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .kpi .s b.good{color:var(--sage)} .kpi .s b.bad{color:var(--rose)}
+
+  /* ---------- charts ---------- */
+  .charts{display:grid;grid-template-columns:3fr 2fr;gap:14px;margin-top:22px}
+  @media(max-width:900px){.charts{grid-template-columns:1fr}}
+  .chart-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px}
+  .chart-card h3{font-family:var(--display);font-size:19px;font-weight:600;margin-bottom:10px}
+  .chart-box{position:relative;height:280px}
+
+  /* ---------- leaderboard ---------- */
+  .board{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-top:22px;overflow:hidden}
+  .board .block-head{padding:18px 22px 0}
+  .table-scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;min-width:920px}
+  thead th{position:sticky;top:0;background:var(--peacock-deep);color:#fff;font-size:11px;letter-spacing:.1em;
+           text-transform:uppercase;font-weight:600;text-align:right;padding:11px 12px;white-space:nowrap}
+  thead th:first-child,thead th:nth-child(2),thead th:nth-child(3){text-align:left}
+  th.sortable{cursor:pointer}
+  th.sortable:hover{background:var(--peacock)}
+  th .arr{font-family:var(--mono);opacity:.9}
+  tbody td{padding:10px 12px;border-top:1px solid var(--line);text-align:right;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  tbody td.txt{text-align:left;font-family:var(--body);font-size:13px;font-weight:500}
+  tbody td.city{text-align:left;font-family:var(--body);color:var(--ink-soft);font-size:12px}
+  tbody tr.rowmain{cursor:pointer}
+  tbody tr.rowmain:hover{background:var(--peacock-tint)}
+  .rankchip{display:inline-block;min-width:26px;text-align:center;border-radius:7px;padding:2px 5px;font-weight:600}
+  .rankchip.top{background:var(--marigold-tint);color:#8a5d0d}
+  .achv{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+  .bar{width:86px;height:7px;border-radius:4px;background:#EEEAE0;overflow:hidden;flex:0 0 auto}
+  .bar i{display:block;height:100%;border-radius:4px;background:var(--peacock)}
+  .bar i.warn{background:var(--marigold)} .bar i.bad{background:var(--rose)}
+  tr.detail td{background:var(--paper);padding:14px 20px}
+  .mini-table{width:100%;border-collapse:collapse}
+  .mini-table th{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);
+                 text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);background:transparent;position:static}
+  .mini-table th:first-child,.mini-table th:nth-child(2){text-align:left}
+  .mini-table td{font-family:var(--mono);font-size:12px;padding:4px 8px;border:none;text-align:right}
+  .mini-table td:first-child,.mini-table td:nth-child(2){text-align:left;font-family:var(--body)}
+  .empty-note{padding:26px;text-align:center;color:var(--ink-soft)}
+
+  footer{margin-top:34px;font-size:11.5px;color:var(--ink-soft);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="eyebrow">Mulmul · Retail Ops</div>
+      <h1>Stores Calling Performance</h1>
+      <div class="sub" id="subline">Loading…</div>
+    </div>
+    <div class="month-tabs" id="monthTabs"></div>
+  </div>
+
+  <!-- signature: reporting weave -->
+  <section class="weave-block">
+    <div class="block-head">
+      <h2 id="weaveTitle">Daily reporting</h2>
+      <span class="hint">Every store logs a row daily — even on week offs. A dashed cell means no row was filed.</span>
+    </div>
+    <div class="day-strip" id="dayStrip"></div>
+    <div class="weave" id="weave"></div>
+    <div class="weave-legend">
+      <span><i class="swatch" style="background:var(--peacock)"></i>Present</span>
+      <span><i class="swatch" style="background:var(--marigold)"></i>Half day</span>
+      <span><i class="swatch" style="background:#EDEAE1"></i>Week off</span>
+      <span><i class="swatch" style="background:#D8D4C8"></i>Leave</span>
+      <span><i class="swatch" style="background:var(--rose-tint);border:1px solid var(--rose)"></i>Store closed</span>
+      <span><i class="swatch" style="background:#fff;border:1.5px dashed var(--rose)"></i>Not reported</span>
+    </div>
+    <div class="missing-line" id="missingLine"></div>
+    <div class="day-mini" id="dayMini"></div>
+  </section>
+
+  <!-- month KPIs -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- charts -->
+  <div class="charts">
+    <div class="chart-card">
+      <h3 id="trendTitle">Daily trend</h3>
+      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Revenue by city</h3>
+      <div class="chart-box"><canvas id="cityChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- leaderboard -->
+  <section class="board">
+    <div class="block-head">
+      <h2 id="boardTitle">Store leaderboard</h2>
+      <span class="hint">Click a column to sort · click a store for its day-by-day log</span>
+    </div>
+    <div class="table-scroll">
+      <table id="boardTable">
+        <thead><tr id="boardHead"></tr></thead>
+        <tbody id="boardBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer id="footer"></footer>
+</div>
+
+<script>
+/* =====================================================================
+   MULMUL — STORES CALLING DASHBOARD
+   ---------------------------------------------------------------------
+   DATA CONTRACT (Apps Script Web App, GET → JSON):
+   {
+     updatedAt: "2026-07-10T09:00:00.000Z",
+     stores:  [{ store, city, agent, callTarget, connectTarget,
+                 leadTarget, revenueTarget }],
+     entries: [{ date:"yyyy-MM-dd", store, status, calls, connected,
+                 leads, conversions, revenue, remarks }]
+   }
+   status ∈ Present | Half Day | Week Off | Leave | Store Closed
+   ---------------------------------------------------------------------
+   TO GO LIVE: paste the deployed /exec URL below. Leave empty for the
+   built-in demo dataset. URL must NOT contain /u/1/.
+   ===================================================================== */
+var API_URL = "";
+
+/* ------------------------- helpers ------------------------- */
+var nfIN = new Intl.NumberFormat('en-IN');
+function fmtNum(v){ return nfIN.format(Math.round(v || 0)); }
+function fmtMoney(v){ return '\u20B9' + fmtNum(v); }
+function fmtMoneyShort(v){
+  v = v || 0;
+  if (v >= 1e7) return '\u20B9' + (v / 1e7).toFixed(2) + ' Cr';
+  if (v >= 1e5) return '\u20B9' + (v / 1e5).toFixed(1) + ' L';
+  return '\u20B9' + fmtNum(v);
+}
+function fmtPct(v){ return Math.round((v || 0) * 100) + '%'; }
+function isoOf(y, m, d){
+  return y + '-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+}
+function parseIso(s){
+  var p = s.split('-');
+  return new Date(+p[0], +p[1] - 1, +p[2]);
+}
+var DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function monthKeyOf(iso){ return iso.slice(0, 7); }
+function monthLabel(key){
+  var p = key.split('-');
+  return MON[+p[1] - 1] + ' ' + p[0];
+}
+function storeCode(name){
+  var words = name.trim().split(/\s+/).filter(function(w){ return w.toUpperCase() !== 'STORE'; });
+  if (!words.length) words = name.trim().split(/\s+/);
+  if (words.length === 1) return words[0].slice(0, 3).toUpperCase();
+  var main = words.filter(function(w){ return w.length > 2; });
+  if (main.length < 2) main = words;
+  return main.slice(0, 3).map(function(w){ return w[0]; }).join('').toUpperCase();
+}
+function statusClass(st){
+  var s = (st || '').toLowerCase();
+  if (s.indexOf('present') === 0) return 'present';
+  if (s.indexOf('half') === 0) return 'halfday';
+  if (s.indexOf('week') === 0) return 'weekoff';
+  if (s.indexOf('leave') === 0) return 'leave';
+  if (s.indexOf('closed') >= 0 || s.indexOf('store closed') >= 0) return 'closed';
+  return 'present';
+}
+
+/* ------------------------- demo data ------------------------- */
+function mulberry32(seed){
+  return function(){
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    var t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function buildDemo(){
+  var master = [
+    ['AHMEDABAD','Ahmedabad'],['BANGALORE JP','Bangalore'],['BANGALORE STAND ALONE','Bangalore'],
+    ['SAKET','Delhi'],['PROMENADE','Delhi'],['CHHATTARPUR','Delhi'],['GURGAON','Delhi'],
+    ['HYDERABAD','Hyderabad'],['KOLKATA','Kolkata'],['JIO','Mumbai'],['JUHU','Mumbai'],
+    ['KALAGHODA','Mumbai'],['LOWER PAREL','Mumbai'],['KEMPS CORNER','Mumbai'],
+    ['NOIDA MALL OF INDIA','Delhi'],['LUDHIANA STORE','Ludhiana'],['CHENNAI STORE','Chennai'],
+    ['LUCKNOW STORE','Lucknow'],['JAIPUR','Jaipur'],['RAIPUR','Raipur'],['GK','Delhi'],
+    ['MOHALI','Mohali'],['SOUTH EX','Delhi'],['CHANDIGHARH','Chandigarh'],
+    ['Khan Market','Delhi'],['Summit','Delhi']
+  ];
+  var rnd = mulberry32(20260710);
+  var stores = master.map(function(m, i){
+    return {
+      store: m[0], city: m[1], agent: '',
+      callTarget: 30, connectTarget: 20, leadTarget: 5, revenueTarget: 500000,
+      _skill: 0.65 + rnd() * 0.7,           // store-level performance factor
+      _weekOff: i % 7                        // rotating week-off day
+    };
+  });
+  var entries = [];
+  var start = new Date(2026, 4, 18);         // 18 May 2026
+  var end = new Date(2026, 6, 10);           // 10 Jul 2026 (today)
+  for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)){
+    var iso = isoOf(d.getFullYear(), d.getMonth() + 1, d.getDate());
+    stores.forEach(function(s){
+      var r = rnd();
+      if (r < 0.04) return;                                  // 4%: forgot to report
+      if (d.getDay() === s._weekOff){
+        entries.push({ date: iso, store: s.store, status: 'Week Off',
+          calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, remarks: '' });
+        return;
+      }
+      if (r < 0.10){
+        entries.push({ date: iso, store: s.store, status: 'Leave',
+          calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, remarks: '' });
+        return;
+      }
+      var half = r < 0.16;
+      var eff = s._skill * (half ? 0.5 : 1) * (0.75 + rnd() * 0.5);
+      var calls = Math.round(30 * eff);
+      var connected = Math.round(calls * (0.55 + rnd() * 0.25));
+      var leads = Math.round(connected * (0.15 + rnd() * 0.2));
+      var conversions = Math.min(leads, Math.round(leads * (0.2 + rnd() * 0.4)));
+      var revenue = conversions * Math.round(4500 + rnd() * 9000);
+      entries.push({ date: iso, store: s.store, status: half ? 'Half Day' : 'Present',
+        calls: calls, connected: connected, leads: leads,
+        conversions: conversions, revenue: revenue, remarks: '' });
+    });
+  }
+  return { updatedAt: new Date().toISOString(), stores: stores, entries: entries };
+}
+
+/* ------------------------- state ------------------------- */
+var DATA = null;
+var state = { monthKey: null, dayIso: null, sortKey: 'revenue', sortDir: -1, expanded: null };
+var trendChart = null, cityChart = null;
+
+/* ------------------------- load ------------------------- */
+function init(){
+  if (API_URL){
+    fetch(API_URL)
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (j.error) throw new Error(j.error);
+        boot(j, true);
+      })
+      .catch(function(err){
+        document.getElementById('subline').textContent = 'Could not load live data (' + err.message + '). Check the Apps Script deployment.';
+      });
+  } else {
+    boot(buildDemo(), false);
+  }
+}
+function boot(data, live){
+  DATA = data;
+  var months = {};
+  DATA.entries.forEach(function(e){ months[monthKeyOf(e.date)] = true; });
+  var keys = Object.keys(months).sort();
+  if (!keys.length) keys = [monthKeyOf(new Date().toISOString().slice(0, 10))];
+  state.monthKey = keys[keys.length - 1];
+  var daysWithData = DATA.entries.filter(function(e){ return monthKeyOf(e.date) === state.monthKey; })
+                                 .map(function(e){ return e.date; }).sort();
+  state.dayIso = daysWithData.length ? daysWithData[daysWithData.length - 1]
+                                     : state.monthKey + '-01';
+  var sub = document.getElementById('subline');
+  sub.innerHTML = '26 stores · one agent each · ' +
+    (live ? '<span class="mode-live">LIVE</span>' : '<span class="mode-demo">DEMO DATA</span> — set API_URL in this file to go live') +
+    ' · updated ' + new Date(DATA.updatedAt).toLocaleString('en-IN');
+  document.getElementById('footer').textContent =
+    'Mulmul internal · reads "Stores Calling Performance" sheet via Apps Script · built as a single static file';
+  renderMonthTabs(keys);
+  renderAll();
+}
+
+/* ------------------------- aggregations ------------------------- */
+function monthEntries(){
+  return DATA.entries.filter(function(e){ return monthKeyOf(e.date) === state.monthKey; });
+}
+function dayEntries(iso){
+  return DATA.entries.filter(function(e){ return e.date === iso; });
+}
+function storeAgg(){
+  var by = {};
+  DATA.stores.forEach(function(s){
+    by[s.store] = { store: s.store, city: s.city, target: s,
+      days: 0, calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0 };
+  });
+  monthEntries().forEach(function(e){
+    var a = by[e.store];
+    if (!a) return;
+    a.days += 1;
+    a.calls += e.calls; a.connected += e.connected; a.leads += e.leads;
+    a.conversions += e.conversions; a.revenue += e.revenue;
+  });
+  return Object.keys(by).map(function(k){
+    var a = by[k];
+    a.connectPct = a.calls ? a.connected / a.calls : 0;
+    a.convPct = a.leads ? a.conversions / a.leads : 0;
+    a.revAch = a.target.revenueTarget ? a.revenue / a.target.revenueTarget : 0;
+    return a;
+  });
+}
+
+/* ------------------------- render: month tabs ------------------------- */
+function renderMonthTabs(keys){
+  var el = document.getElementById('monthTabs');
+  el.innerHTML = '';
+  keys.forEach(function(k){
+    var b = document.createElement('button');
+    b.className = 'month-tab' + (k === state.monthKey ? ' active' : '');
+    b.textContent = monthLabel(k);
+    b.onclick = function(){
+      state.monthKey = k;
+      var days = DATA.entries.filter(function(e){ return monthKeyOf(e.date) === k; })
+                             .map(function(e){ return e.date; }).sort();
+      state.dayIso = days.length ? days[days.length - 1] : k + '-01';
+      state.expanded = null;
+      renderMonthTabs(keys);
+      renderAll();
+    };
+    el.appendChild(b);
+  });
+}
+
+/* ------------------------- render: weave + day ------------------------- */
+function renderDayStrip(){
+  var el = document.getElementById('dayStrip');
+  el.innerHTML = '';
+  var p = state.monthKey.split('-');
+  var y = +p[0], m = +p[1];
+  var dim = new Date(y, m, 0).getDate();
+  var withData = {};
+  monthEntries().forEach(function(e){ withData[e.date] = true; });
+  for (var d = 1; d <= dim; d++){
+    var iso = isoOf(y, m, d);
+    var b = document.createElement('button');
+    b.className = 'day-pill' + (withData[iso] ? ' hasdata' : '') + (iso === state.dayIso ? ' active' : '');
+    b.innerHTML = '<span class="dnum">' + d + '</span><span class="dow">' + DOW[new Date(y, m - 1, d).getDay()] + '</span>';
+    b.onclick = (function(dayIso){
+      return function(){ state.dayIso = dayIso; renderDay(); renderDayStrip(); };
+    })(iso);
+    el.appendChild(b);
+  }
+  var active = el.querySelector('.day-pill.active');
+  if (active) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+function renderDay(){
+  var d = parseIso(state.dayIso);
+  document.getElementById('weaveTitle').textContent =
+    'Reporting — ' + DOW[d.getDay()] + ', ' + d.getDate() + ' ' + MON[d.getMonth()] + ' ' + d.getFullYear();
+  var todays = {};
+  dayEntries(state.dayIso).forEach(function(e){ todays[e.store] = e; });
+  var weave = document.getElementById('weave');
+  weave.innerHTML = '';
+  var missing = [];
+  DATA.stores.forEach(function(s){
+    var e = todays[s.store];
+    var cell = document.createElement('button');
+    var cls = e ? statusClass(e.status) : 'missing';
+    if (!e) missing.push(s.store);
+    cell.className = 'wcell ' + cls;
+    cell.title = s.store + (e ? ' — ' + e.status +
+      (e.calls ? ' · ' + e.calls + ' calls · ' + fmtMoney(e.revenue) : '') : ' — not reported');
+    cell.innerHTML = '<span class="code">' + storeCode(s.store) + '</span>' +
+                     '<span class="st">' + (e ? e.status.replace('Store Closed', 'Closed') : 'No row') + '</span>';
+    cell.onclick = function(){
+      state.expanded = (state.expanded === s.store) ? null : s.store;
+      renderBoard();
+      document.querySelector('.board').scrollIntoView({ behavior: 'smooth' });
+    };
+    weave.appendChild(cell);
+  });
+  var ml = document.getElementById('missingLine');
+  ml.innerHTML = missing.length
+    ? '<strong>' + missing.length + ' not reported:</strong> ' + missing.join(' · ')
+    : 'All 26 stores reported. Clean weave.';
+  var t = { calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, present: 0 };
+  dayEntries(state.dayIso).forEach(function(e){
+    t.calls += e.calls; t.connected += e.connected; t.leads += e.leads;
+    t.conversions += e.conversions; t.revenue += e.revenue;
+    if (statusClass(e.status) === 'present' || statusClass(e.status) === 'halfday') t.present += 1;
+  });
+  document.getElementById('dayMini').innerHTML =
+    mini(t.present, 'Agents active') + mini(fmtNum(t.calls), 'Calls') +
+    mini(fmtNum(t.connected), 'Connected') + mini(fmtNum(t.leads), 'Leads') +
+    mini(fmtNum(t.conversions), 'Conversions') + mini(fmtMoneyShort(t.revenue), 'Revenue');
+  function mini(v, l){ return '<div class="m"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
+}
+
+/* ------------------------- render: KPIs ------------------------- */
+function renderKpis(){
+  var aggs = storeAgg();
+  var t = { calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, revTarget: 0 };
+  aggs.forEach(function(a){
+    t.calls += a.calls; t.connected += a.connected; t.leads += a.leads;
+    t.conversions += a.conversions; t.revenue += a.revenue;
+    t.revTarget += a.target.revenueTarget;
+  });
+  var connectPct = t.calls ? t.connected / t.calls : 0;
+  var convPct = t.leads ? t.conversions / t.leads : 0;
+  var revAch = t.revTarget ? t.revenue / t.revTarget : 0;
+  var el = document.getElementById('kpis');
+  el.innerHTML =
+    kpi('Calls made', fmtNum(t.calls), monthLabel(state.monthKey) + ' · all stores', '') +
+    kpi('Connect rate', fmtPct(connectPct), fmtNum(t.connected) + ' connected', '') +
+    kpi('Leads', fmtNum(t.leads), 'from connected calls', '') +
+    kpi('Conversions', fmtNum(t.conversions), fmtPct(convPct) + ' of leads', 'gold') +
+    kpi('Revenue', fmtMoneyShort(t.revenue),
+        '<b class="' + (revAch >= 1 ? 'good' : (revAch >= 0.6 ? '' : 'bad')) + '">' + fmtPct(revAch) +
+        '</b> of ' + fmtMoneyShort(t.revTarget) + ' target', 'gold');
+  function kpi(l, v, s, cls){
+    return '<div class="kpi ' + cls + '"><div class="l">' + l + '</div><div class="v">' + v +
+           '</div><div class="s">' + s + '</div></div>';
+  }
+}
+
+/* ------------------------- render: charts ------------------------- */
+function renderCharts(){
+  var css = getComputedStyle(document.documentElement);
+  var peacock = css.getPropertyValue('--peacock').trim();
+  var marigold = css.getPropertyValue('--marigold').trim();
+  var ink = css.getPropertyValue('--ink-soft').trim();
+  var byDay = {};
+  monthEntries().forEach(function(e){
+    if (!byDay[e.date]) byDay[e.date] = { calls: 0, revenue: 0 };
+    byDay[e.date].calls += e.calls;
+    byDay[e.date].revenue += e.revenue;
+  });
+  var days = Object.keys(byDay).sort();
+  document.getElementById('trendTitle').textContent = 'Daily trend — ' + monthLabel(state.monthKey);
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: days.map(function(d){ return +d.slice(8); }),
+      datasets: [
+        { label: 'Calls', data: days.map(function(d){ return byDay[d].calls; }),
+          borderColor: peacock, backgroundColor: peacock, tension: .35, pointRadius: 2, yAxisID: 'y' },
+        { label: 'Revenue', data: days.map(function(d){ return byDay[d].revenue; }),
+          borderColor: marigold, backgroundColor: marigold, tension: .35, pointRadius: 2, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { labels: { font: { family: 'Inter', size: 11 }, color: ink, boxWidth: 10 } },
+        tooltip: { callbacks: { label: function(c){
+          return c.dataset.label + ': ' + (c.datasetIndex === 1 ? fmtMoney(c.parsed.y) : fmtNum(c.parsed.y));
+        } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: ink, font: { family: 'JetBrains Mono', size: 10 } } },
+        y: { position: 'left', ticks: { color: ink, font: { family: 'JetBrains Mono', size: 10 } } },
+        y2: { position: 'right', grid: { drawOnChartArea: false },
+              ticks: { color: ink, font: { family: 'JetBrains Mono', size: 10 },
+                       callback: function(v){ return fmtMoneyShort(v); } } }
+      }
+    }
+  });
+  var byCity = {};
+  storeAgg().forEach(function(a){
+    byCity[a.city] = (byCity[a.city] || 0) + a.revenue;
+  });
+  var cities = Object.keys(byCity).sort(function(a, b){ return byCity[b] - byCity[a]; });
+  if (cityChart) cityChart.destroy();
+  cityChart = new Chart(document.getElementById('cityChart'), {
+    type: 'bar',
+    data: { labels: cities,
+      datasets: [{ data: cities.map(function(c){ return byCity[c]; }),
+        backgroundColor: peacock, borderRadius: 5, barThickness: 14 }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: function(c){ return fmtMoney(c.parsed.x); } } } },
+      scales: {
+        x: { ticks: { color: ink, font: { family: 'JetBrains Mono', size: 10 },
+                      callback: function(v){ return fmtMoneyShort(v); } } },
+        y: { grid: { display: false }, ticks: { color: ink, font: { family: 'Inter', size: 11 } } }
+      }
+    }
+  });
+}
+
+/* ------------------------- render: leaderboard ------------------------- */
+var COLS = [
+  { key: 'rank', label: '#', sortable: false },
+  { key: 'store', label: 'Store', sortable: true, txt: true },
+  { key: 'city', label: 'City', sortable: true, txt: true },
+  { key: 'days', label: 'Days', sortable: true },
+  { key: 'calls', label: 'Calls', sortable: true },
+  { key: 'connectPct', label: 'Conn %', sortable: true },
+  { key: 'leads', label: 'Leads', sortable: true },
+  { key: 'conversions', label: 'Conv', sortable: true },
+  { key: 'revenue', label: 'Revenue', sortable: true },
+  { key: 'revAch', label: 'vs Target', sortable: true }
+];
+function renderBoard(){
+  document.getElementById('boardTitle').textContent = 'Store leaderboard — ' + monthLabel(state.monthKey);
+  var head = document.getElementById('boardHead');
+  head.innerHTML = '';
+  COLS.forEach(function(c){
+    var th = document.createElement('th');
+    th.innerHTML = c.label + (state.sortKey === c.key ? ' <span class="arr">' + (state.sortDir < 0 ? '\u2193' : '\u2191') + '</span>' : '');
+    if (c.sortable){
+      th.className = 'sortable';
+      th.tabIndex = 0;
+      var doSort = function(){
+        if (state.sortKey === c.key) state.sortDir *= -1;
+        else { state.sortKey = c.key; state.sortDir = (c.txt ? 1 : -1); }
+        renderBoard();
+      };
+      th.onclick = doSort;
+      th.onkeydown = function(ev){ if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); doSort(); } };
+    }
+    head.appendChild(th);
+  });
+  var aggs = storeAgg();
+  var ranked = aggs.slice().sort(function(a, b){ return b.revAch - a.revAch; });
+  var rankOf = {};
+  ranked.forEach(function(a, i){ rankOf[a.store] = i + 1; });
+  aggs.sort(function(a, b){
+    var k = state.sortKey, va = a[k], vb = b[k];
+    if (typeof va === 'string') return va.localeCompare(vb) * state.sortDir;
+    return (vb - va) * (state.sortDir < 0 ? 1 : -1);
+  });
+  var body = document.getElementById('boardBody');
+  body.innerHTML = '';
+  if (!monthEntries().length){
+    var tr0 = document.createElement('tr');
+    tr0.innerHTML = '<td colspan="' + COLS.length + '" class="empty-note">No entries yet for ' +
+      monthLabel(state.monthKey) + '. Rows appear as the team fills Daily Entry.</td>';
+    body.appendChild(tr0);
+    return;
+  }
+  aggs.forEach(function(a){
+    var tr = document.createElement('tr');
+    tr.className = 'rowmain';
+    var rk = rankOf[a.store];
+    var barCls = a.revAch >= 0.9 ? '' : (a.revAch >= 0.6 ? 'warn' : 'bad');
+    tr.innerHTML =
+      '<td><span class="rankchip' + (rk <= 3 ? ' top' : '') + '">' + rk + '</span></td>' +
+      '<td class="txt">' + a.store + '</td>' +
+      '<td class="city">' + a.city + '</td>' +
+      '<td>' + a.days + '</td>' +
+      '<td>' + fmtNum(a.calls) + '</td>' +
+      '<td>' + fmtPct(a.connectPct) + '</td>' +
+      '<td>' + fmtNum(a.leads) + '</td>' +
+      '<td>' + fmtNum(a.conversions) + '</td>' +
+      '<td>' + fmtMoney(a.revenue) + '</td>' +
+      '<td><div class="achv"><span>' + fmtPct(a.revAch) + '</span><span class="bar"><i class="' + barCls +
+      '" style="width:' + Math.min(100, Math.round(a.revAch * 100)) + '%"></i></span></div></td>';
+    tr.onclick = function(){
+      state.expanded = (state.expanded === a.store) ? null : a.store;
+      renderBoard();
+    };
+    body.appendChild(tr);
+    if (state.expanded === a.store) body.appendChild(detailRow(a.store));
+  });
+}
+function detailRow(store){
+  var tr = document.createElement('tr');
+  tr.className = 'detail';
+  var rows = monthEntries().filter(function(e){ return e.store === store; })
+    .sort(function(a, b){ return a.date < b.date ? 1 : -1; });
+  var html = '<td colspan="' + COLS.length + '">';
+  if (!rows.length){
+    html += 'No entries for ' + store + ' this month.';
+  } else {
+    html += '<table class="mini-table"><tr><th>Date</th><th>Status</th><th>Calls</th><th>Conn</th>' +
+            '<th>Leads</th><th>Conv</th><th>Revenue</th><th style="text-align:left">Remarks</th></tr>';
+    rows.forEach(function(e){
+      var d = parseIso(e.date);
+      html += '<tr><td>' + d.getDate() + ' ' + MON[d.getMonth()] + ' · ' + DOW[d.getDay()] + '</td>' +
+        '<td>' + e.status + '</td><td>' + e.calls + '</td><td>' + e.connected + '</td>' +
+        '<td>' + e.leads + '</td><td>' + e.conversions + '</td><td>' + fmtMoney(e.revenue) + '</td>' +
+        '<td style="text-align:left;font-family:var(--body)">' + (e.remarks || '') + '</td></tr>';
+    });
+    html += '</table>';
+  }
+  html += '</td>';
+  tr.innerHTML = html;
+  return tr;
+}
+
+/* ------------------------- render all ------------------------- */
+function renderAll(){
+  renderDayStrip();
+  renderDay();
+  renderKpis();
+  renderCharts();
+  renderBoard();
+}
+init();
+</script>
+</body>
+</html>
