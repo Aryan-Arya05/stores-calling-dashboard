@@ -145,7 +145,7 @@
   .board{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-top:22px;overflow:hidden}
   .board .block-head{padding:18px 22px 0}
   .table-scroll{overflow-x:auto}
-  table{width:100%;border-collapse:collapse;min-width:920px}
+  table{width:100%;border-collapse:collapse;min-width:1060px}
   thead th{position:sticky;top:0;background:var(--peacock-deep);color:#fff;font-size:11px;letter-spacing:.1em;
            text-transform:uppercase;font-weight:600;text-align:right;padding:11px 12px;white-space:nowrap}
   thead th:first-child,thead th:nth-child(2),thead th:nth-child(3){text-align:left}
@@ -154,6 +154,11 @@
   th .arr{font-family:var(--mono);opacity:.9}
   tbody td{padding:10px 12px;border-top:1px solid var(--line);text-align:right;font-family:var(--mono);font-size:12.5px;white-space:nowrap}
   tbody td.txt{text-align:left;font-family:var(--body);font-size:13px;font-weight:500}
+  .nv{font-weight:600}
+  .nv.good{color:var(--sage)}
+  .nv.warn{color:#A8720F}
+  .nv.bad{color:var(--rose)}
+  .nv.none{color:var(--ink-soft);font-weight:400}
   tbody td.city{text-align:left;font-family:var(--body);color:var(--ink-soft);font-size:12px}
   tbody tr.rowmain{cursor:pointer}
   tbody tr.rowmain:hover{background:var(--peacock-tint)}
@@ -198,7 +203,7 @@
     .chart-card{padding:14px}
     .chart-box{height:230px}
     .board .block-head{padding:14px 14px 0}
-    table{min-width:780px}
+    table{min-width:900px}
     thead th{padding:9px 8px;font-size:10px}
     tbody td{padding:8px;font-size:11.5px}
     tbody td.txt{max-width:132px;overflow:hidden;text-overflow:ellipsis}
@@ -273,6 +278,7 @@
       <span><i class="swatch" style="background:#fff;border:1.5px dashed var(--rose)"></i>Not reported</span>
     </div>
     <div class="missing-line" id="missingLine"></div>
+    <div class="missing-line" id="normLine"></div>
     <div class="day-mini" id="dayMini"></div>
   </section>
 
@@ -317,16 +323,36 @@
      updatedAt: "2026-07-10T09:00:00.000Z",
      stores:  [{ store, city, agent, callTarget, connectTarget,
                  leadTarget, revenueTarget }],
-     entries: [{ date:"yyyy-MM-dd", store, status, calls, connected,
-                 leads, conversions, revenue, remarks }]
+     entries: [{ date:"yyyy-MM-dd", store, status, footfall, calls,
+                 connected, leads, conversions, revenue, remarks }]
    }
    status ∈ Present | Half Day | Week Off | Leave | Store Closed
+   footfall: null = not recorded (no norm applied), 0 = genuinely zero walk-ins
    ---------------------------------------------------------------------
    TO GO LIVE: paste the deployed /exec URL below. Leave empty for the
    built-in demo dataset. URL must NOT contain /u/1/.
    ===================================================================== */
-var API_URL = "https://script.google.com/macros/s/AKfycbxyILSkmxmHGL0OPrM01rCdSXbQT8EY3dy7w442b8B9ZxYeJU5pCRMHlHa80JwoI02ACQ/exec";
+var API_URL = "";
 var REFRESH_MINUTES = 3;   // auto-refetch interval when live; only polls while the tab is visible
+
+/* CALL NORMS — minimum calls expected for a full working day, by footfall band.
+   Bands are checked top-down (footfall <= maxFootfall). Footfall above the last
+   band has NO defined minimum yet → no flag. Add a band here to change that.
+   Half Day = 50% of the norm. Leave / Week Off / Closed / blank footfall = no norm. */
+var CALL_NORMS = [
+  { maxFootfall: 5,  calls: 60 },
+  { maxFootfall: 10, calls: 30 }
+];
+function expectedCalls(footfall, status){
+  if (footfall === null || footfall === undefined) return 0;   // footfall not recorded → can't judge
+  var s = statusClass(status);
+  var mult = (s === 'present') ? 1 : (s === 'halfday' ? 0.5 : 0);
+  if (!mult) return 0;
+  for (var i = 0; i < CALL_NORMS.length; i++){
+    if (footfall <= CALL_NORMS[i].maxFootfall) return Math.round(CALL_NORMS[i].calls * mult);
+  }
+  return 0;
+}
 
 /* ------------------------- helpers ------------------------- */
 var nfIN = new Intl.NumberFormat('en-IN');
@@ -409,24 +435,30 @@ function buildDemo(){
       var r = rnd();
       if (r < 0.04) return;                                  // 4%: forgot to report
       if (d.getDay() === s._weekOff){
-        entries.push({ date: iso, store: s.store, status: 'Week Off',
+        entries.push({ date: iso, store: s.store, status: 'Week Off', footfall: null,
           calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, remarks: '' });
         return;
       }
       if (r < 0.10){
-        entries.push({ date: iso, store: s.store, status: 'Leave',
+        entries.push({ date: iso, store: s.store, status: 'Leave', footfall: null,
           calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, remarks: '' });
         return;
       }
       var half = r < 0.16;
-      var eff = s._skill * (half ? 0.5 : 1) * (0.75 + rnd() * 0.5);
-      var calls = Math.round(30 * eff);
+      var eff = s._skill * (0.75 + rnd() * 0.5);
+      // weekends see more walk-ins; footfall drives the call norm
+      var weekend = (d.getDay() === 0 || d.getDay() === 6);
+      var footfall = Math.round((weekend ? 6 : 2) + rnd() * (weekend ? 9 : 8) * (half ? 0.5 : 1));
+      var exp = expectedCalls(footfall, half ? 'Half Day' : 'Present');
+      var calls = exp > 0
+        ? Math.round(exp * (0.55 + rnd() * 0.75) * Math.min(eff + 0.3, 1.15))  // some meet norm, some don't
+        : Math.round(8 + rnd() * 18);                                           // busy day, no norm
       var connected = Math.round(calls * (0.55 + rnd() * 0.25));
       var leads = Math.round(connected * (0.15 + rnd() * 0.2));
       var conversions = Math.min(leads, Math.round(leads * (0.2 + rnd() * 0.4)));
       var revenue = conversions * Math.round(4500 + rnd() * 9000);
       entries.push({ date: iso, store: s.store, status: half ? 'Half Day' : 'Present',
-        calls: calls, connected: connected, leads: leads,
+        footfall: footfall, calls: calls, connected: connected, leads: leads,
         conversions: conversions, revenue: revenue, remarks: '' });
     });
   }
@@ -564,7 +596,8 @@ function storeAgg(){
   var by = {};
   DATA.stores.forEach(function(s){
     by[s.store] = { store: s.store, city: s.city, target: s,
-      days: 0, calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0 };
+      days: 0, calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0,
+      footfall: 0, expCalls: 0 };
   });
   rangeEntries().forEach(function(e){
     var a = by[e.store];
@@ -572,11 +605,15 @@ function storeAgg(){
     a.days += 1;
     a.calls += e.calls; a.connected += e.connected; a.leads += e.leads;
     a.conversions += e.conversions; a.revenue += e.revenue;
+    if (e.footfall !== null && e.footfall !== undefined) a.footfall += e.footfall;
+    a.expCalls += expectedCalls(e.footfall, e.status);
   });
   return Object.keys(by).map(function(k){
     var a = by[k];
     a.connectPct = a.calls ? a.connected / a.calls : 0;
     a.convPct = a.leads ? a.conversions / a.leads : 0;
+    a.normPct = a.expCalls ? a.calls / a.expCalls : null;   // null = no norm applied in range
+    a.normSort = a.normPct === null ? 999 : a.normPct;      // unflagged stores sort as "fine"
     a.revTgt = proratedTarget(a.target.revenueTarget);
     a.revAch = a.revTgt ? a.revenue / a.revTgt : 0;
     return a;
@@ -786,6 +823,7 @@ function renderDay(){
     if (!e) missing.push(s.store);
     cell.className = 'wcell ' + cls;
     cell.title = s.store + (e ? ' — ' + e.status +
+      (e.footfall !== null && e.footfall !== undefined ? ' · ' + e.footfall + ' footfall' : '') +
       (e.calls ? ' · ' + e.calls + ' calls · ' + fmtMoney(e.revenue) : '') : ' — not reported');
     cell.innerHTML = '<span class="code">' + storeCode(s.store) + '</span>' +
                      '<span class="st">' + (e ? e.status.replace('Store Closed', 'Closed') : 'No row') + '</span>';
@@ -800,37 +838,61 @@ function renderDay(){
   ml.innerHTML = missing.length
     ? '<strong>' + missing.length + ' not reported:</strong> ' + missing.join(' · ')
     : 'All 26 stores reported. Clean weave.';
-  var t = { calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, present: 0 };
+  var t = { footfall: 0, calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, present: 0 };
+  var flagged = [], normed = 0;
   dayEntries(state.dayIso).forEach(function(e){
     t.calls += e.calls; t.connected += e.connected; t.leads += e.leads;
     t.conversions += e.conversions; t.revenue += e.revenue;
+    if (e.footfall !== null && e.footfall !== undefined) t.footfall += e.footfall;
     if (statusClass(e.status) === 'present' || statusClass(e.status) === 'halfday') t.present += 1;
+    var exp = expectedCalls(e.footfall, e.status);
+    if (exp > 0){
+      normed++;
+      if (e.calls < exp) flagged.push(storeCode(e.store) + ' ' + e.calls + '/' + exp);
+    }
   });
+  var nl = document.getElementById('normLine');
+  if (flagged.length){
+    nl.innerHTML = '<strong>' + flagged.length + ' below call norm (made/expected):</strong> ' + flagged.join(' · ');
+  } else if (normed){
+    nl.textContent = 'Call norms met by all stores with recorded footfall.';
+  } else {
+    nl.innerHTML = dayEntries(state.dayIso).length
+      ? '<strong>Footfall not recorded</strong> for this day — call norms can\u2019t be checked.'
+      : '';
+  }
   document.getElementById('dayMini').innerHTML =
-    mini(t.present, 'Agents active') + mini(fmtNum(t.calls), 'Calls') +
-    mini(fmtNum(t.connected), 'Connected') + mini(fmtNum(t.leads), 'Leads') +
-    mini(fmtNum(t.conversions), 'Conversions') + mini(fmtMoneyShort(t.revenue), 'Revenue');
+    mini(t.present, 'Agents active') + mini(fmtNum(t.footfall), 'Footfall') +
+    mini(fmtNum(t.calls), 'Calls') + mini(fmtNum(t.connected), 'Connected') +
+    mini(fmtNum(t.leads), 'Leads') + mini(fmtNum(t.conversions), 'Conversions') +
+    mini(fmtMoneyShort(t.revenue), 'Revenue');
   function mini(v, l){ return '<div class="m"><div class="v">' + v + '</div><div class="l">' + l + '</div></div>'; }
 }
 
 /* ------------------------- render: KPIs ------------------------- */
 function renderKpis(){
   var aggs = storeAgg();
-  var t = { calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, revTarget: 0 };
+  var t = { calls: 0, connected: 0, leads: 0, conversions: 0, revenue: 0, revTarget: 0, expCalls: 0 };
   aggs.forEach(function(a){
     t.calls += a.calls; t.connected += a.connected; t.leads += a.leads;
     t.conversions += a.conversions; t.revenue += a.revenue;
     t.revTarget += a.revTgt;
+    t.expCalls += a.expCalls;
   });
   var connectPct = t.calls ? t.connected / t.calls : 0;
   var convPct = t.leads ? t.conversions / t.leads : 0;
   var revAch = t.revTarget ? t.revenue / t.revTarget : 0;
+  var normPct = t.expCalls ? t.calls / t.expCalls : null;
   var el = document.getElementById('kpis');
   el.innerHTML =
     kpi('Calls made', fmtNum(t.calls), rangeLabel() + ' · all stores', '') +
+    kpi('Vs call norm',
+        normPct === null ? '\u2014' : fmtPct(normPct),
+        normPct === null ? 'no footfall recorded in range'
+          : '<b class="' + (normPct >= 1 ? 'good' : (normPct >= 0.8 ? '' : 'bad')) + '">' +
+            fmtNum(t.expCalls) + ' expected</b> from footfall bands', '') +
     kpi('Connect rate', fmtPct(connectPct), fmtNum(t.connected) + ' connected', '') +
-    kpi('Leads', fmtNum(t.leads), 'from connected calls', '') +
-    kpi('Conversions', fmtNum(t.conversions), fmtPct(convPct) + ' of leads', 'gold') +
+    kpi('Leads', fmtNum(t.leads), fmtPct(convPct) + ' convert · ' + fmtNum(t.conversions) + ' conversions', 'gold') +
     kpi('Revenue', fmtMoneyShort(t.revenue),
         '<b class="' + (revAch >= 1 ? 'good' : (revAch >= 0.6 ? '' : 'bad')) + '">' + fmtPct(revAch) +
         '</b> of ' + fmtMoneyShort(t.revTarget) + ' pro-rated target', 'gold');
@@ -918,7 +980,9 @@ var COLS = [
   { key: 'store', label: 'Store', sortable: true, txt: true },
   { key: 'city', label: 'City', sortable: true, txt: true },
   { key: 'days', label: 'Days', sortable: true },
+  { key: 'footfall', label: 'Foot&shy;fall', sortable: true },
   { key: 'calls', label: 'Calls', sortable: true },
+  { key: 'normSort', label: 'vs Norm', sortable: true },
   { key: 'connectPct', label: 'Conn %', sortable: true },
   { key: 'leads', label: 'Leads', sortable: true },
   { key: 'conversions', label: 'Conv', sortable: true },
@@ -968,12 +1032,22 @@ function renderBoard(){
     tr.className = 'rowmain';
     var rk = rankOf[a.store];
     var barCls = a.revAch >= 0.9 ? '' : (a.revAch >= 0.6 ? 'warn' : 'bad');
+    var normCell;
+    if (a.normPct === null){
+      normCell = '<span class="nv none">\u2014</span>';
+    } else {
+      var nCls = a.normPct >= 1 ? 'good' : (a.normPct >= 0.8 ? 'warn' : 'bad');
+      normCell = '<span class="nv ' + nCls + '">' + fmtPct(a.normPct) +
+                 (a.normPct < 1 ? ' \u25BE' : '') + '</span>';
+    }
     tr.innerHTML =
       '<td><span class="rankchip' + (rk <= 3 ? ' top' : '') + '">' + rk + '</span></td>' +
       '<td class="txt">' + a.store + '</td>' +
       '<td class="city">' + a.city + '</td>' +
       '<td>' + a.days + '</td>' +
+      '<td>' + fmtNum(a.footfall) + '</td>' +
       '<td>' + fmtNum(a.calls) + '</td>' +
+      '<td>' + normCell + '</td>' +
       '<td>' + fmtPct(a.connectPct) + '</td>' +
       '<td>' + fmtNum(a.leads) + '</td>' +
       '<td>' + fmtNum(a.conversions) + '</td>' +
@@ -997,13 +1071,21 @@ function detailRow(store){
   if (!rows.length){
     html += 'No entries for ' + store + ' in this range.';
   } else {
-    html += '<table class="mini-table"><tr><th>Date</th><th>Status</th><th>Calls</th><th>Conn</th>' +
-            '<th>Leads</th><th>Conv</th><th>Revenue</th><th style="text-align:left">Remarks</th></tr>';
+    html += '<table class="mini-table"><tr><th>Date</th><th>Status</th><th>Footfall</th><th>Calls</th>' +
+            '<th>Norm</th><th>Conn</th><th>Leads</th><th>Conv</th><th>Revenue</th>' +
+            '<th style="text-align:left">Remarks</th></tr>';
     rows.forEach(function(e){
       var d = parseIso(e.date);
+      var exp = expectedCalls(e.footfall, e.status);
+      var below = exp > 0 && e.calls < exp;
+      var ff = (e.footfall === null || e.footfall === undefined) ? '\u2014' : e.footfall;
       html += '<tr><td>' + d.getDate() + ' ' + MON[d.getMonth()] + ' · ' + DOW[d.getDay()] + '</td>' +
-        '<td>' + e.status + '</td><td>' + e.calls + '</td><td>' + e.connected + '</td>' +
-        '<td>' + e.leads + '</td><td>' + e.conversions + '</td><td>' + fmtMoney(e.revenue) + '</td>' +
+        '<td>' + e.status + '</td><td>' + ff + '</td>' +
+        '<td' + (below ? ' style="color:var(--rose);font-weight:600"' : '') + '>' + e.calls +
+        (below ? ' \u25BE' : '') + '</td>' +
+        '<td>' + (exp > 0 ? exp : '\u2014') + '</td>' +
+        '<td>' + e.connected + '</td><td>' + e.leads + '</td><td>' + e.conversions + '</td>' +
+        '<td>' + fmtMoney(e.revenue) + '</td>' +
         '<td style="text-align:left;font-family:var(--body)">' + (e.remarks || '') + '</td></tr>';
     });
     html += '</table>';
